@@ -1,0 +1,122 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/todoapp';
+
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch((err) => console.error('MongoDB connection error:', err));
+
+// Todo Schema
+const todoSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+const Todo = mongoose.model('Todo', todoSchema);
+
+// Routes
+
+// GET all todos
+app.get('/api/todos', async (req, res) => {
+    try {
+        const todos = await Todo.find().sort({ createdAt: -1 });
+        res.json(todos);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET single todo
+app.get('/api/todos/:id', async (req, res) => {
+    try {
+        const todo = await Todo.findById(req.params.id);
+        if (!todo) {
+            return res.status(404).json({ error: 'Todo not found' });
+        }
+        res.json(todo);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST create new todo
+app.post('/api/todos', async (req, res) => {
+    try {
+        const { title, description } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+        const todo = new Todo({ title, description });
+        await todo.save();
+        res.status(201).json(todo);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT update todo
+app.put('/api/todos/:id', async (req, res) => {
+    try {
+        const { title, description, completed } = req.body;
+        const todo = await Todo.findByIdAndUpdate(
+            req.params.id,
+            { title, description, completed },
+            { new: true, runValidators: true }
+        );
+        if (!todo) {
+            return res.status(404).json({ error: 'Todo not found' });
+        }
+        res.json(todo);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE todo
+app.delete('/api/todos/:id', async (req, res) => {
+    try {
+        const todo = await Todo.findByIdAndDelete(req.params.id);
+        if (!todo) {
+            return res.status(404).json({ error: 'Todo not found' });
+        }
+        res.json({ message: 'Todo deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Server is running' });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
