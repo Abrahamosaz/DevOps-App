@@ -6,7 +6,6 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - '.github/workflows/ci-cd.yml'
 
 env:
   REGISTRY: ghcr.io
@@ -85,6 +84,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Pull latest changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git pull --rebase origin main
+
       - name: Update backend deployment manifest
         run: |
           FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
@@ -100,9 +105,6 @@ jobs:
 
       - name: Commit updated manifest
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git pull --rebase origin main
           git add devOps/backend.yml
           if ! git diff --staged --quiet; then
             git commit -m "chore: update backend image tag to ${{ steps.image-tag.outputs.tag }}"
@@ -162,6 +164,12 @@ jobs:
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL || 'http://localhost:5000/api/todos' }}
 
+      - name: Pull latest changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git pull --rebase origin main
+
       - name: Update frontend deployment manifest
         run: |
           FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
@@ -177,9 +185,6 @@ jobs:
 
       - name: Commit updated manifest
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git pull --rebase origin main
           git add devOps/frontend.yml
           if ! git diff --staged --quiet; then
             git commit -m "chore: update frontend image tag to ${{ steps.image-tag.outputs.tag }}"
