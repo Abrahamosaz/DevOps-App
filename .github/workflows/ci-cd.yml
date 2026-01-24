@@ -102,10 +102,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git pull --rebase origin main
           git add devOps/backend.yml
           if ! git diff --staged --quiet; then
             git commit -m "chore: update backend image tag to ${{ steps.image-tag.outputs.tag }}"
-            git push
+            git push origin main
           else
             echo "No changes to commit"
           fi
@@ -178,10 +179,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git pull --rebase origin main
           git add devOps/frontend.yml
           if ! git diff --staged --quiet; then
             git commit -m "chore: update frontend image tag to ${{ steps.image-tag.outputs.tag }}"
-            git push
+            git push origin main
           else
             echo "No changes to commit"
           fi
