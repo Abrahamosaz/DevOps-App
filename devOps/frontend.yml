@@ -16,7 +16,7 @@ spec:
         - name: dockerhub-secret
       containers:
         - name: k8s-vite-app
-          image: abrahamosaz/k8s-vite-app:latest
+          image: ghcr.io/abrahamosaz/devops-app/frontend:a075c15-20260124234201
           imagePullPolicy: Always
 
 ---
