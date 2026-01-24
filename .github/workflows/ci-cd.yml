@@ -1,0 +1,185 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/ci-cd.yml'
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/backend
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: self-hosted
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for changes
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  build-backend:
+    name: Build and Push Backend
+    runs-on: self-hosted
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CR_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_TOKEN }}
+
+      - name: Generate image tag
+        id: image-tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          IMAGE_TAG="${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "latest_image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image-tag.outputs.full_image }}
+            ${{ steps.image-tag.outputs.latest_image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update backend deployment manifest
+        run: |
+          FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
+          # Update the image in backend.yml
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s|image: abrahamosaz/k8s-backend-app:.*|image: ${FULL_IMAGE}|g" devOps/backend.yml
+          else
+            # Linux
+            sed -i "s|image: abrahamosaz/k8s-backend-app:.*|image: ${FULL_IMAGE}|g" devOps/backend.yml
+          fi
+          echo "Updated backend.yml with image: ${FULL_IMAGE}"
+
+      - name: Commit updated manifest
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add devOps/backend.yml
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update backend image tag to ${{ steps.image-tag.outputs.tag }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+
+  build-frontend:
+    name: Build and Push Frontend
+    runs-on: self-hosted
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CR_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_TOKEN }}
+
+      - name: Generate image tag
+        id: image-tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          IMAGE_TAG="${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "latest_image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image-tag.outputs.full_image }}
+            ${{ steps.image-tag.outputs.latest_image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'http://localhost:5000/api/todos' }}
+
+      - name: Update frontend deployment manifest
+        run: |
+          FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
+          # Update the image in frontend.yml
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s|image: abrahamosaz/k8s-vite-app:.*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
+          else
+            # Linux
+            sed -i "s|image: abrahamosaz/k8s-vite-app:.*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
+          fi
+          echo "Updated frontend.yml with image: ${FULL_IMAGE}"
+
+      - name: Commit updated manifest
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add devOps/frontend.yml
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update frontend image tag to ${{ steps.image-tag.outputs.tag }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
