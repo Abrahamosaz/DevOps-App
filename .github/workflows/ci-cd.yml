@@ -93,13 +93,13 @@ jobs:
       - name: Update backend deployment manifest
         run: |
           FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
-          # Update the image in backend.yml
+          # Update the image in backend.yml (match both old and new formats)
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            # macOS
-            sed -i '' "s|image: abrahamosaz/k8s-backend-app:.*|image: ${FULL_IMAGE}|g" devOps/backend.yml
+            # macOS - match any image format on the image line
+            sed -i '' "s|\(image: \).*|image: ${FULL_IMAGE}|g" devOps/backend.yml
           else
-            # Linux
-            sed -i "s|image: abrahamosaz/k8s-backend-app:.*|image: ${FULL_IMAGE}|g" devOps/backend.yml
+            # Linux - match any image format on the image line
+            sed -i "s|\(image: \).*|image: ${FULL_IMAGE}|g" devOps/backend.yml
           fi
           echo "Updated backend.yml with image: ${FULL_IMAGE}"
 
@@ -173,13 +173,13 @@ jobs:
       - name: Update frontend deployment manifest
         run: |
           FULL_IMAGE=${{ steps.image-tag.outputs.full_image }}
-          # Update the image in frontend.yml
+          # Update the image in frontend.yml (match both old and new formats)
           if [[ "$OSTYPE" == "darwin"* ]]; then
-            # macOS
-            sed -i '' "s|image: abrahamosaz/k8s-vite-app:.*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
+            # macOS - match any image format on the image line
+            sed -i '' "s|\(image: \).*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
           else
-            # Linux
-            sed -i "s|image: abrahamosaz/k8s-vite-app:.*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
+            # Linux - match any image format on the image line
+            sed -i "s|\(image: \).*|image: ${FULL_IMAGE}|g" devOps/frontend.yml
           fi
           echo "Updated frontend.yml with image: ${FULL_IMAGE}"
 
