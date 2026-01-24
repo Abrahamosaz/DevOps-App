@@ -67,10 +67,11 @@ jobs:
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           IMAGE_TAG="${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "full_image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "latest_image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest" >> $GITHUB_OUTPUT
+          echo "full_image=${{ env.REGISTRY }}/${REPO_LOWER}/backend:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "latest_image=${{ env.REGISTRY }}/${REPO_LOWER}/backend:latest" >> $GITHUB_OUTPUT
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -140,10 +141,11 @@ jobs:
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           IMAGE_TAG="${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "full_image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "latest_image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest" >> $GITHUB_OUTPUT
+          echo "full_image=${{ env.REGISTRY }}/${REPO_LOWER}/frontend:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "latest_image=${{ env.REGISTRY }}/${REPO_LOWER}/frontend:latest" >> $GITHUB_OUTPUT
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
