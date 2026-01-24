@@ -16,7 +16,7 @@ spec:
         - name: dockerhub-secret
       containers:
         - name: k8s-backend-app
-          image: ghcr.io/abrahamosaz/devops-app/backend:e714134-20260124232010
+          image: ghcr.io/abrahamosaz/devops-app/backend:cf23897-20260124235920
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
