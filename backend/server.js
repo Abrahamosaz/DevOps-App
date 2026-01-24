@@ -117,6 +117,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'OK', message: 'Server is running' });
 });
 
+
 // set the server to listen on the port
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on http://0.0.0.0:${PORT}`);
