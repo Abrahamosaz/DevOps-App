@@ -13,7 +13,7 @@ spec:
         app: backend
     spec:
       imagePullSecrets:
-        - name: dockerhub-secret
+        - name: ghcr-secret
       containers:
         - name: k8s-backend-app
           image: ghcr.io/abrahamosaz/devops-app/backend:cf23897-20260124235920

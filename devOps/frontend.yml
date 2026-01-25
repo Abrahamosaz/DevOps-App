@@ -13,7 +13,7 @@ spec:
         app: frontend
     spec:
       imagePullSecrets:
-        - name: dockerhub-secret
+        - name: ghcr-secret
       containers:
         - name: k8s-vite-app
           image: ghcr.io/abrahamosaz/devops-app/frontend:cf23897-20260124235627
