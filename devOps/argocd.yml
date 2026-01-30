@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k8s-devops-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    path: devOps
+    repoURL: 'https://github.com/Abrahamosaz/DevOps-App.git'
+    targetRevision: HEAD
+  destination:
+    namespace: default
+    server: 'https://kubernetes.default.svc'
